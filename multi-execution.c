@@ -186,10 +186,19 @@ int main(int argc, char *argv[]) {
 		free(buffer);
 	}
 
+
+	FILE *fp;
+	fp = fopen("result.csv", "w");
 	for(int i = 0; i < flow_number; i++) {
 		results[i] = results[i] / sim_number;
+		fprintf(fp, "%lf\n", results[i]);
 		printf("%lf\t", results[i]);
 	}
+	fclose(fp);
+
+	// Result file created, now run R script!
+
+	system("Rstudio evaluation.R");
 
 	printf("\n");
 
