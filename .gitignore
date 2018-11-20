@@ -1,2 +1,6 @@
 OutputFiles
 multi-execution
+.RData
+.RHistory
+result.csv
+Rplots.pdf

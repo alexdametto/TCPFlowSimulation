@@ -198,7 +198,9 @@ int main(int argc, char *argv[]) {
 
 	// Result file created, now run R script!
 
-	system("Rstudio evaluation.R");
+	system("Rscript RScripts/evaluation.R");
+
+	system("xdg-open Rplots.pdf"); // open pdf with default pdf viewer
 
 	printf("\n");
 
