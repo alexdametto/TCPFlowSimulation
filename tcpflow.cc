@@ -309,6 +309,7 @@ int main (int argc, char *argv[])
     std::cout << "\n";
 
     std::cout << "Tempo medio della simulazione: " << tempoTot/number << " secondi.\n";
+<<<<<<< HEAD
 
     std::string path = "scratch/TCPFlowSimulation/OutputFiles/ris" + std::to_string(simNumber) + ".txt";
     std::fstream txtFile;
@@ -317,6 +318,12 @@ int main (int argc, char *argv[])
     txtFile << data;
     txtFile << "\n";
     txtFile.close();
+=======
+    
+    /*std::ostringstream os;
+    os << tempoTot/number;
+    std::string str = os.str();*/
+>>>>>>> c56f7a57ac79b2a65026a2ff87ea5cc70cd2436a
 
     return 0;
 }
