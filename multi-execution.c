@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-<<<<<<< HEAD
 #include <assert.h>
 
 
@@ -59,34 +58,20 @@ char** str_split(char* a_str, const char a_delim)
 int main(int argc, char *argv[]) {
 	int sim_number = 1;
 	int flow_number = 1;
-=======
-
- 
-int main(int argc, char *argv[]) {
-	int number = 1;
->>>>>>> c56f7a57ac79b2a65026a2ff87ea5cc70cd2436a
 	int status;
 
 	pid_t wpid;
 
-<<<<<<< HEAD
 	if(argc < 3) {
-=======
-	if(argc < 2) {
->>>>>>> c56f7a57ac79b2a65026a2ff87ea5cc70cd2436a
 		printf("Need these arguments: number_flow");
         exit(EXIT_FAILURE);
 	}
 
-<<<<<<< HEAD
 	sim_number = atoi(argv[1]);
 	flow_number = atoi(argv[2]);
 
 	system("rm -rf OutputFiles");
 	system("mkdir OutputFiles");
-=======
-	number = atoi(argv[1]);
->>>>>>> c56f7a57ac79b2a65026a2ff87ea5cc70cd2436a
 
 	int count = 0;
 	int flag = 1;
@@ -99,7 +84,6 @@ int main(int argc, char *argv[]) {
 		}
 		if(pid == 0) {
 			flag = 0;
-<<<<<<< HEAD
 			char str[12];
 			char buff[255];
 			sprintf(str, "%d", count);
@@ -116,20 +100,13 @@ int main(int argc, char *argv[]) {
 
 			system(buff);
 
-=======
-			system("cd ../.. && ./waf --run tcpflow && cd -");
->>>>>>> c56f7a57ac79b2a65026a2ff87ea5cc70cd2436a
 			exit(EXIT_SUCCESS);
 			//execl("../../waf", "waf", "--run", "tcpflow", NULL);
 			//printf("Simulation number %d created.", i);
 		}
 		else {
 			count++;
-<<<<<<< HEAD
 			if(count == sim_number)
-=======
-			if(count == number)
->>>>>>> c56f7a57ac79b2a65026a2ff87ea5cc70cd2436a
 				flag = 0;
 		}
 	}
@@ -138,7 +115,6 @@ int main(int argc, char *argv[]) {
 
 	// now all childs are finished
 
-<<<<<<< HEAD
 	printf("Looking for stats files...\n");
 
 	double results[flow_number];
@@ -217,13 +193,5 @@ int main(int argc, char *argv[]) {
 
 	printf("\n");
 
-=======
-	printf("Looking for stats files...");
-
-	for(int i = 0; i < number; ++i) {
-		
-	}
-
->>>>>>> c56f7a57ac79b2a65026a2ff87ea5cc70cd2436a
 	exit(EXIT_SUCCESS);
 }
