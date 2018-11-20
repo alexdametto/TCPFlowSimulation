@@ -117,10 +117,12 @@ int main(int argc, char *argv[]) {
 
 	printf("Looking for stats files...\n");
 
-	double results[flow_number];
+	double resPack[flow_number];
+	double resTime[flow_number];
 
 	for(int i = 0; i < flow_number; i++) {
-		results[i] = 0;
+		resPack[i] = 0;
+		resTime[i] = 0;
 	}
 
 	for(int i = 0; i < sim_number; i++) {
@@ -168,19 +170,23 @@ int main(int argc, char *argv[]) {
 		/* confirm we have read the file by
 		outputing it to the console */
 
-		char** ris = str_split(buffer, '\n');
+		printf("OCIO   %s", buffer);
 
-		for(int j = 0; *(ris + j); j++) {
-			double d = 0;
+		char** rows = str_split(buffer, '\n');
 
-			sscanf(ris[j], "%lf", &d);
+		for(int j = 0; *(rows + j); j++) {
+			double n_packets = 0;
+			double time = 0;
 
-			results[j] += d;
+			sscanf(rows[j], "%lf,%lf", &n_packets, &time);
 
-			free(*(ris+j));
+			resPack[j] += n_packets;
+			resTime[j] += time;
+
+			free(*(rows+j));
 		}
 
-		free(ris);
+		free(rows);
 
 		/* free the memory we used for the buffer */
 		free(buffer);
@@ -190,9 +196,9 @@ int main(int argc, char *argv[]) {
 	FILE *fp;
 	fp = fopen("result.csv", "w");
 	for(int i = 0; i < flow_number; i++) {
-		results[i] = results[i] / sim_number;
-		fprintf(fp, "%lf\n", results[i]);
-		printf("%lf\t", results[i]);
+		resPack[i] = resPack[i] / sim_number;
+		resTime[i] = resTime[i] / sim_number;
+		fprintf(fp, "%lf,%lf\n", resPack[i], resTime[i]);
 	}
 	fclose(fp);
 

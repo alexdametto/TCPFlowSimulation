@@ -21,6 +21,8 @@
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
 #include <string>
+#include <sstream>
+
 
 #include <iostream>
 #include <fstream>
@@ -37,6 +39,7 @@ class TCPFlow {
   uint32_t totalTxBytes;
   uint32_t currentTxBytes;
   uint32_t writeSize;
+  uint32_t numPackets;
   double startingTime;
   double endingTime;
 
@@ -75,6 +78,7 @@ class TCPFlow {
     this->totalTxBytes = numPackets * bytesForPacket;
     this->writeSize = bytesForPacket;
     this->currentTxBytes = 0;
+    this->numPackets = numPackets;
 
     this->startingTime = 0;
     this->endingTime = 0;
@@ -102,6 +106,10 @@ class TCPFlow {
   void getTimes(double ris[2]){
     ris[0] = this->startingTime;
     ris[1] = this->endingTime;
+  }
+
+  uint32_t getFlowDim() {
+    return this->numPackets;
   }
 
 };
@@ -153,16 +161,6 @@ void PacketSink::HandleRead(Ptr<Socket> socket){
 
     // -2 perchè inizio da due
     FlowArr[nFlow-2]->setTime();
-
-    //std::cout << ip << "\n";
-
-    /*char* token = new char[1];
-    token[0] = '.';*/ 
-
-    //std::ostringstream convert;
-    for (int a = 0; a < 20; a++) {
-      //std::cout << buffer[a];
-    }
   }
 } 
 
@@ -281,10 +279,11 @@ int main (int argc, char *argv[])
     exp->SetAttribute("Mean", DoubleValue(mean));
     exp->SetAttribute("Bound", DoubleValue(bound));
 
+    uint32_t n_pack = 100;
     for(int i = 0; i < number; ++i){
         Ptr<Socket> localSocket = Socket::CreateSocket (hosts.Get (i), TcpSocketFactory::GetTypeId ());
         localSocket->Bind ();
-        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, 1000, 1024);
+        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, (i+1)*n_pack, 1024);
 
         FlowArr[i] = app;
 
@@ -296,6 +295,10 @@ int main (int argc, char *argv[])
     Simulator::Run ();
     Simulator::Destroy ();
 
+    std::string path = "scratch/TCPFlowSimulation/OutputFiles/ris" + std::to_string(simNumber) + ".txt";
+    std::fstream txtFile;
+    txtFile.open(path, std::fstream::out);
+
     double tempoTot = 0;
     for(int i = 0; i < number; i++){
       double ris[2];
@@ -304,19 +307,22 @@ int main (int argc, char *argv[])
       std::cout << "Simulazione iniziata a " << ris[0] << " secondi e finita a " << ris[1] << " secondi.\n";
 
       tempoTot += (ris[1] - ris[0]);
+
+      std::stringstream data;
+      data << FlowArr[i]->getFlowDim() << "," << ris[1] - ris[0];
+
+      //std::cout << data.str() << "\n";
+
+      txtFile << data.str() << "\n";
+
+      //std::string data(std::to_string(tempoTot/number));
     }
+
+    txtFile.close();
 
     std::cout << "\n";
 
     std::cout << "Tempo medio della simulazione: " << tempoTot/number << " secondi.\n";
-
-    std::string path = "scratch/TCPFlowSimulation/OutputFiles/ris" + std::to_string(simNumber) + ".txt";
-    std::fstream txtFile;
-    txtFile.open(path, std::fstream::out);
-    std::string data(std::to_string(tempoTot/number));
-    txtFile << data;
-    txtFile << "\n";
-    txtFile.close();
 
     return 0;
 }
