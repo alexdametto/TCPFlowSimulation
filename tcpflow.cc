@@ -22,6 +22,9 @@
 #include "ns3/applications-module.h"
 #include <string>
 
+#include <iostream>
+#include <fstream>
+
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("SimTesi");
@@ -160,46 +163,8 @@ void PacketSink::HandleRead(Ptr<Socket> socket){
     for (int a = 0; a < 20; a++) {
       //std::cout << buffer[a];
     }
-
-    //std::cout << "\n";
-
-    //std::string ip = convert.str();
-
-    //std::cout << ip << "\n";
-
-    //std::string ip = InetSocketAddress::ConvertFrom (from).GetIpv4 () << "";
-
-    //uint32_t n = ip.Get();
-
-    //std::cout << Simulator::Now().GetSeconds() << "\n";
-
-    //std::cout << packet->GetSize() << "\n";
-
-    //byteRicevuti += packet->GetSize();
-
-    //std::cout << InetSocketAddress::ConvertFrom (from).GetIpv4 () << "\n";
-
-    //std::cout << packet->GetSize() << "\n";
-
-    //byteRicevuti += packet->GetSize();
-
-		/*NS_LOG_INFO (m_local << "Received " << packet->GetSize () << " bytes from " <<
-				InetSocketAddress::ConvertFrom (from).GetIpv4 ());
-		NS_LOG_INFO ("PACKET ID: " << packet->GetUid() << "====> CONTENT:" << msg << " SIZE: " << packet->GetSize());
-    */
   }
-  //std::cout << byteRicevuti << "\n";
 } 
-
-/*static void CwndChange (Ptr<OutputStreamWrapper> stream, uint32_t oldCwnd, uint32_t newCwnd)
-{
-  //NS_LOG_UNCOND (Simulator::Now ().GetSeconds () << "\t" << newCwnd);
-  *stream->GetStream () << Simulator::Now ().GetSeconds () << "\t" << oldCwnd << "\t" << newCwnd << std::endl;
-}*/
-
-/*static void closeSocket(){
-    std::cout << Simulator::Now().GetSeconds() << "\n";
-}*/
 
 void printRoutingTable (Ptr<Node> node) {
         Ipv4StaticRoutingHelper helper;
@@ -230,6 +195,8 @@ int main (int argc, char *argv[])
 
     int number = 5;
 
+    uint32_t simNumber = -1;
+
     int seed = 10;
 
     FlowArr = (TCPFlow**)malloc(number * sizeof(TCPFlow*));
@@ -240,8 +207,9 @@ int main (int argc, char *argv[])
     SeedManager::SetSeed (seed);
 
     CommandLine cmd;
-    /*cmd.AddValue("Delay", "Latenza collegamento P2P in millisecondi", lat);
-    cmd.AddValue("DataRate", "P2P data rate in bps", datarate);
+    cmd.AddValue("SimNumber", "Number of the simulation.", simNumber);
+    cmd.AddValue("FlowNumber", "Number of TCP Flow", number);
+    /*cmd.AddValue("DataRate", "P2P data rate in bps", datarate);
     cmd.AddValue("n_tcp", "Number of TCP Flow", number);
     cmd.AddValue("seed", "Number of seed", seed);*/
     cmd.Parse (argc, argv);
@@ -301,19 +269,6 @@ int main (int argc, char *argv[])
 
     uint16_t servPort = 50000;
 
-    // Creato un packet sink per ricevere i pacchetti sull'endHost
-    /*PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), servPort)); 
-    ApplicationContainer apps = sink.Install (endHosts.Get(0));
-    apps.Start (Seconds (0.0));
-
-    PacketSink app = apps.Get(0);*/
-
-    // ....HandleRead()
-
-    /*Ptr<MyrcevApp> app1 = CreateObject<MyrcevApp> ();
-    routers.Get(0)->AddApplication (app1);*/
-    //app1->HandleRead(recvsocket);
-
     PacketSinkHelper sink ("ns3::TcpSocketFactory",
                      InetSocketAddress (Ipv4Address::GetAny (), servPort));
     ApplicationContainer sinkApps = sink.Install (endHosts.Get (0));
@@ -321,8 +276,7 @@ int main (int argc, char *argv[])
 
     double mean = 1;
     double bound = 2;
-    //genera una distribuzione con valori da 0 a bound con media mean
-   
+    //genera una distribuzione exp con valori da 0 a bound con media mean
     Ptr<ExponentialRandomVariable> exp = CreateObject<ExponentialRandomVariable> ();
     exp->SetAttribute("Mean", DoubleValue(mean));
     exp->SetAttribute("Bound", DoubleValue(bound));
@@ -336,26 +290,7 @@ int main (int argc, char *argv[])
 
         Time delay = Seconds(exp->GetValue());
 
-        Simulator::Schedule(delay, &TCPFlow::StartFlow, app); // avvio la mia app in background
-
-
-        // Le funzioni di callback vogliono il metodo e, nel caso di metodo di una classe, l'oggetto a cui applicarlo !!
-
-        /*Ptr<Socket> localSocket = Socket::CreateSocket (hosts.Get (i), TcpSocketFactory::GetTypeId ());
-        localSocket->Bind ();
-
-        Simulator::ScheduleNow (&StartFlow, localSocket,
-                          ipInterfs.GetAddress (1), servPort);
-        */
-        // QUESTO FUNZIONAAA!!!!
-        /*BulkSendHelper source ("ns3::TcpSocketFactory",
-        InetSocketAddress (ipInterfs.GetAddress (1), servPort));
-        // Set the amount of data to send in bytes.  Zero is unlimited.
-        source.SetAttribute ("SendSize", UintegerValue (1024));
-        source.SetAttribute ("MaxBytes", UintegerValue(1025));
-        ApplicationContainer sourceApps = source.Install (hosts.Get (i));
-        sourceApps.Start (Seconds (0.0));
-        sourceApps.Stop (Seconds (1000.0));*/
+        Simulator::Schedule(delay, &TCPFlow::StartFlow, app); // avvio la mia app in BACKGROUND
     }
 
     Simulator::Run ();
@@ -375,6 +310,13 @@ int main (int argc, char *argv[])
 
     std::cout << "Tempo medio della simulazione: " << tempoTot/number << " secondi.\n";
 
+    std::string path = "scratch/TCPFlowSimulation/OutputFiles/ris" + std::to_string(simNumber) + ".txt";
+    std::fstream txtFile;
+    txtFile.open(path, std::fstream::out);
+    std::string data(std::to_string(tempoTot/number));
+    txtFile << data;
+    txtFile << "\n";
+    txtFile.close();
 
     return 0;
 }
