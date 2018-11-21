@@ -84,6 +84,10 @@ class TCPFlow {
     this->endingTime = 0;
   }
 
+  ~TCPFlow() {
+    //free(this->socket);
+  }
+
   void StartFlow () {
     NS_LOG_LOGIC ("Starting flow at time " <<  Simulator::Now ().GetSeconds ());
     //socket->Bind();
@@ -191,9 +195,9 @@ int main (int argc, char *argv[])
 {
     LogComponentEnable("SimTesi", LOG_LEVEL_INFO);
 
-    int number = 5;
+    int number = 100;
 
-    uint32_t simNumber = -1;
+    uint32_t simNumber = 1;
 
     int seed = 10;
 
@@ -211,6 +215,11 @@ int main (int argc, char *argv[])
     cmd.AddValue("n_tcp", "Number of TCP Flow", number);
     cmd.AddValue("seed", "Number of seed", seed);*/
     cmd.Parse (argc, argv);
+
+    if(number > 250) {
+      number = 250;
+      std::cout << "IL NUMERO MASSIMO DI TCP FLOW È 250. LIMITE IMPOSTATO A 250.";
+    }
 
     PointToPointHelper p2p;
     p2p.SetDeviceAttribute ("DataRate", StringValue (datarate)); // B [bps] è la banda del canale
@@ -279,11 +288,11 @@ int main (int argc, char *argv[])
     exp->SetAttribute("Mean", DoubleValue(mean));
     exp->SetAttribute("Bound", DoubleValue(bound));
 
-    uint32_t n_pack = 100;
+    uint32_t n_pack = 10;
     for(int i = 0; i < number; ++i){
         Ptr<Socket> localSocket = Socket::CreateSocket (hosts.Get (i), TcpSocketFactory::GetTypeId ());
         localSocket->Bind ();
-        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, (i+1)*n_pack, 1024);
+        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, (i+1)*n_pack, 64);
 
         FlowArr[i] = app;
 
@@ -313,16 +322,24 @@ int main (int argc, char *argv[])
 
       //std::cout << data.str() << "\n";
 
+      //free(FlowArr[i]);
+
+      //delete FlowArr[i];
+
       txtFile << data.str() << "\n";
 
       //std::string data(std::to_string(tempoTot/number));
     }
 
+    //delete [] exp;
+
+    std::cout << "Tempo medio della simulazione: " << tempoTot/number << " secondi.\n";
+
+    //free(&(*exp));
+
     txtFile.close();
 
     std::cout << "\n";
-
-    std::cout << "Tempo medio della simulazione: " << tempoTot/number << " secondi.\n";
 
     return 0;
 }

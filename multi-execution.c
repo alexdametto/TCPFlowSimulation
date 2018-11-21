@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 	pid_t wpid;
 
 	if(argc < 3) {
-		printf("Need these arguments: number_flow");
+		printf("Need these arguments: number_sim - number_flow_per_sim");
         exit(EXIT_FAILURE);
 	}
 
@@ -94,6 +94,8 @@ int main(int argc, char *argv[]) {
 
 			sprintf(str, "%d", flow_number);
 
+			// Se è la prima volta che viene buildato allora darà errori!!! Prossima volta buildare prima di iniziare
+
 			strcat(buff, str);
 
 			strcat(buff,"\" && cd -");
@@ -113,7 +115,7 @@ int main(int argc, char *argv[]) {
 
 	while ((wpid = wait(&status)) > 0);
 
-	// now all childs are finished
+	// now all childs have finished
 
 	printf("Looking for stats files...\n");
 
@@ -170,7 +172,7 @@ int main(int argc, char *argv[]) {
 		/* confirm we have read the file by
 		outputing it to the console */
 
-		printf("OCIO   %s", buffer);
+		//printf("OCIO   %s", buffer);
 
 		char** rows = str_split(buffer, '\n');
 
