@@ -73,6 +73,9 @@ int main(int argc, char *argv[]) {
 	system("rm -rf OutputFiles");
 	system("mkdir OutputFiles");
 
+	// build before running, without this we can have error of multiple building !!!
+	system("../../waf build");
+
 	int count = 0;
 	int flag = 1;
 	while(flag) {
@@ -94,11 +97,17 @@ int main(int argc, char *argv[]) {
 
 			sprintf(str, "%d", flow_number);
 
-			// Se è la prima volta che viene buildato allora darà errori!!! Prossima volta buildare prima di iniziare
+			strcat(buff, str);
+
+			strcat(buff, " --Seed=");
+
+			sprintf(str, "%d", count);
 
 			strcat(buff, str);
 
 			strcat(buff,"\" && cd -");
+
+			printf("%s\n", buff);
 
 			system(buff);
 
@@ -145,53 +154,51 @@ int main(int argc, char *argv[]) {
 
 		/* quit if the file does not exist */
 		if(infile == NULL) {
-			printf("Unable to open %s.\n", path);
-			exit(EXIT_FAILURE);
+			printf("Unable to open %s, ignoring it.\n", path);
 		}
+		else {
+			/* Get the number of bytes */
+			fseek(infile, 0L, SEEK_END);
+			numbytes = ftell(infile);
 
-		/* Get the number of bytes */
-		fseek(infile, 0L, SEEK_END);
-		numbytes = ftell(infile);
+			/* reset the file position indicator to 
+			the beginning of the file */
+			fseek(infile, 0L, SEEK_SET);	
 
-		/* reset the file position indicator to 
-		the beginning of the file */
-		fseek(infile, 0L, SEEK_SET);	
+			/* grab sufficient memory for the 
+			buffer to hold the text */
+			buffer = (char*)calloc(numbytes, sizeof(char));	
 
-		/* grab sufficient memory for the 
-		buffer to hold the text */
-		buffer = (char*)calloc(numbytes, sizeof(char));	
+			/* memory error */
+			if(buffer == NULL)
+			return 1;
 
-		/* memory error */
-		if(buffer == NULL)
-		return 1;
+			/* copy all the text into the buffer */
+			fread(buffer, sizeof(char), numbytes, infile);
+			fclose(infile);
 
-		/* copy all the text into the buffer */
-		fread(buffer, sizeof(char), numbytes, infile);
-		fclose(infile);
+			/* confirm we have read the file by
+			outputing it to the console */
 
-		/* confirm we have read the file by
-		outputing it to the console */
+			char** rows = str_split(buffer, '\n');
 
-		//printf("OCIO   %s", buffer);
+			for(int j = 0; *(rows + j); j++) {
+				double n_packets = 0;
+				double time = 0;
 
-		char** rows = str_split(buffer, '\n');
+				sscanf(rows[j], "%lf,%lf", &n_packets, &time);
 
-		for(int j = 0; *(rows + j); j++) {
-			double n_packets = 0;
-			double time = 0;
+				resPack[j] += n_packets;
+				resTime[j] += time;
 
-			sscanf(rows[j], "%lf,%lf", &n_packets, &time);
+				free(*(rows+j));
+			}
 
-			resPack[j] += n_packets;
-			resTime[j] += time;
+			free(rows);
 
-			free(*(rows+j));
+			/* free the memory we used for the buffer */
+			free(buffer);
 		}
-
-		free(rows);
-
-		/* free the memory we used for the buffer */
-		free(buffer);
 	}
 
 

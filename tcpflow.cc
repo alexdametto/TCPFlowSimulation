@@ -195,7 +195,7 @@ int main (int argc, char *argv[])
 {
     LogComponentEnable("SimTesi", LOG_LEVEL_INFO);
 
-    int number = 100;
+    int number = 200;
 
     uint32_t simNumber = 1;
 
@@ -206,15 +206,16 @@ int main (int argc, char *argv[])
     std::string lat = "2ms"; // 2 ms
     std::string datarate = "500000"; // 500 kb/s
 
-    SeedManager::SetSeed (seed);
-
     CommandLine cmd;
     cmd.AddValue("SimNumber", "Number of the simulation.", simNumber);
-    cmd.AddValue("FlowNumber", "Number of TCP Flow", number);
+    cmd.AddValue("FlowNumber", "Number of TCP Flow.", number);
+    cmd.AddValue("Seed", "Seed of the simulation.", seed);
     /*cmd.AddValue("DataRate", "P2P data rate in bps", datarate);
     cmd.AddValue("n_tcp", "Number of TCP Flow", number);
     cmd.AddValue("seed", "Number of seed", seed);*/
     cmd.Parse (argc, argv);
+
+    SeedManager::SetSeed (seed+1);
 
     if(number > 250) {
       number = 250;
