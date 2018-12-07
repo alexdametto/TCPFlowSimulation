@@ -43,31 +43,43 @@ class TCPFlow {
   double startingTime;
   double endingTime;
 
+
   private:
   void WriteUntilBufferFull(Ptr<Socket> socket, uint32_t txSpace) {
     //std::cout << currentTxBytes << "\t" << totalTxBytes << "\n";
-    while (currentTxBytes < totalTxBytes && socket->GetTxAvailable () > 0) 
+    while (currentTxBytes < totalTxBytes && socket->GetTxAvailable () >= this->writeSize) 
     {
       /*uint32_t toWrite = totalTxBytes - currentTxBytes;
       if(toWrite >= writeSize)
         toWrite = writeSize;*/
 
-      uint32_t left = totalTxBytes - currentTxBytes;
+      /*uint32_t left = totalTxBytes - currentTxBytes;
       uint32_t dataOffset = currentTxBytes % writeSize;
       uint32_t toWrite = writeSize - dataOffset;
+
+
       toWrite = std::min (toWrite, left);
       toWrite = std::min (toWrite, socket->GetTxAvailable ());
-      Ptr<Packet> packet = Create<Packet>(toWrite);
+
+      if(toWrite < this->writeSize) {
+        return;
+      }*/
+      Ptr<Packet> packet = Create<Packet>(this->writeSize);
       int amountSent = socket->Send (packet);
       if(amountSent < 0)
       {
+        std::cout << "uhm....\n";
         // we will be called again when new tx space becomes available.
         return;
       }
       else currentTxBytes += amountSent;
+
+      //std::cout << "Inviati: " << amountSent << "\t Stato: " << currentTxBytes << "\t/\t" << totalTxBytes << "\n"; 
     }
     if(currentTxBytes == totalTxBytes) // il socket va chiuso SOLO se ho finito, altrimenti manderà meno pacchetti!!!! 
       socket->Close ();
+
+    //std::cout << currentTxBytes << "\t/\t" << totalTxBytes << "\n"; 
   }
 
   public:
@@ -85,11 +97,10 @@ class TCPFlow {
   }
 
   ~TCPFlow() {
-    //free(this->socket);
   }
 
   void StartFlow () {
-    NS_LOG_LOGIC ("Starting flow at time " <<  Simulator::Now ().GetSeconds ());
+    //NS_LOG_LOGIC ("Starting flow at time " <<  Simulator::Now ().GetSeconds ());
     //socket->Bind();
     
     this->startingTime = this->endingTime = Simulator::Now().GetSeconds();
@@ -115,7 +126,6 @@ class TCPFlow {
   uint32_t getFlowDim() {
     return this->numPackets;
   }
-
 };
 
 TCPFlow** FlowArr;
@@ -168,27 +178,22 @@ void PacketSink::HandleRead(Ptr<Socket> socket){
   }
 } 
 
-void printRoutingTable (Ptr<Node> node) {
-        Ipv4StaticRoutingHelper helper;
-        Ptr<Ipv4> stack = node -> GetObject<Ipv4>();
-        Ptr<Ipv4StaticRouting> staticrouting = helper.GetStaticRouting
-(stack);
-        uint32_t numroutes=staticrouting->GetNRoutes();
-        Ipv4RoutingTableEntry entry;
-        std::cout << "Routing table for device: " <<
-Names::FindName(node) <<
-"\n";
-        std::cout << "Destination\tMask\t\tGateway\t\tIface\n";
 
-        for (uint32_t i =0 ; i<numroutes;i++) {
-                entry =staticrouting->GetRoute(i);
-                std::cout << entry.GetDestNetwork()  << "\t"
-                                << entry.GetDestNetworkMask() << "\t"
-                                << entry.GetGateway() << "\t\t"
-                                << entry.GetInterface() << "\n";
-        }
-        return;
 
+double geometric(double mean) {
+
+  //double x = (double)rand() / (double)RAND_MAX;
+
+  double p = 1/mean;
+  double value = (log(1 - rand() * 1.0 / RAND_MAX) / log(1 - p));
+
+  return value;
+}
+
+double exponential(double mean) {
+  //double x = (double)rand() / (double)RAND_MAX;
+
+  return -log(rand() * 1.0 / RAND_MAX) / mean;
 }
 
 int main (int argc, char *argv[])
@@ -197,14 +202,9 @@ int main (int argc, char *argv[])
 
     int number = 200;
 
-    uint32_t simNumber = 1;
+    int simNumber = 1;
 
-    int seed = 10;
-
-    FlowArr = (TCPFlow**)malloc(number * sizeof(TCPFlow*));
-
-    std::string lat = "2ms"; // 2 ms
-    std::string datarate = "500000"; // 500 kb/s
+    int seed = 100;
 
     CommandLine cmd;
     cmd.AddValue("SimNumber", "Number of the simulation.", simNumber);
@@ -215,6 +215,13 @@ int main (int argc, char *argv[])
     cmd.AddValue("seed", "Number of seed", seed);*/
     cmd.Parse (argc, argv);
 
+    //std::cout << simNumber << "\t" << number << "\t" << seed << "\n";
+
+    //return 0;
+
+    FlowArr = (TCPFlow**)malloc(number * sizeof(TCPFlow*));
+
+    srand(seed+1);
     SeedManager::SetSeed (seed+1);
 
     if(number > 250) {
@@ -222,9 +229,12 @@ int main (int argc, char *argv[])
       std::cout << "IL NUMERO MASSIMO DI TCP FLOW È 250. LIMITE IMPOSTATO A 250.";
     }
 
+    std::string lat = "2"; // 2 ms
+    std::string datarate = "1000000000"; // 1 Gb/s
+
     PointToPointHelper p2p;
-    p2p.SetDeviceAttribute ("DataRate", StringValue (datarate)); // B [bps] è la banda del canale
-    p2p.SetChannelAttribute ("Delay", StringValue (lat)); // lambda^(-1)
+    p2p.SetDeviceAttribute ("DataRate", DataRateValue ( DataRate(1000000000))); // B [bps] è la banda del canale
+    p2p.SetChannelAttribute ("Delay", TimeValue (MilliSeconds(2))); // lambda^(-1)
 
     Time::SetResolution (Time::NS);
 
@@ -268,8 +278,14 @@ int main (int argc, char *argv[])
     Ipv4Address base = Ipv4Address("10.1.1.0");
     ipv4.SetBase(base, mask);
 
+    std::string datarateDest = "1000000"; // 1 Gb/s
+
+    PointToPointHelper speciapP2P;
+    speciapP2P.SetDeviceAttribute ("DataRate", DataRateValue ( DataRate(1000000))); // B [bps] è la banda del canale
+    speciapP2P.SetChannelAttribute ("Delay", TimeValue (MilliSeconds(2))); // lambda^(-1)
+
     NodeContainer connection = NodeContainer(routers.Get(0), endHosts.Get(0));
-    NetDeviceContainer ndc = p2p.Install(connection);
+    NetDeviceContainer ndc = speciapP2P.Install(connection);
 
     Ipv4InterfaceContainer ipInterfs = ipv4.Assign(ndc);
 
@@ -282,24 +298,31 @@ int main (int argc, char *argv[])
     ApplicationContainer sinkApps = sink.Install (endHosts.Get (0));
     sinkApps.Start (Seconds (0.0));
 
-    double mean = 1;
-    double bound = 2;
-    //genera una distribuzione exp con valori da 0 a bound con media mean
-    Ptr<ExponentialRandomVariable> exp = CreateObject<ExponentialRandomVariable> ();
-    exp->SetAttribute("Mean", DoubleValue(mean));
-    exp->SetAttribute("Bound", DoubleValue(bound));
+    uint32_t dimPack = 1522;
+    
+    double packetMean = 2000;
+    double expMean = 0.95 * 1000000 / dimPack; // 100 Mb/s
 
-    uint32_t n_pack = 10;
-    for(int i = 0; i < number; ++i){
+    Time lastDelay = Seconds(0);
+
+    // pacchetti in modo geometrico media = 2000 pacchetti
+
+    for(int i = 0; i < number; i++){
         Ptr<Socket> localSocket = Socket::CreateSocket (hosts.Get (i), TcpSocketFactory::GetTypeId ());
         localSocket->Bind ();
-        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, (i+1)*n_pack, 64);
+
+        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, (packetMean),  dimPack); // 1500 ethernet
 
         FlowArr[i] = app;
 
-        Time delay = Seconds(exp->GetValue());
-
-        Simulator::Schedule(delay, &TCPFlow::StartFlow, app); // avvio la mia app in BACKGROUND
+        if(i == 0) {
+          Simulator::ScheduleNow(&TCPFlow::StartFlow, app); // avvio la mia app in BACKGROUND
+        }
+        else {
+          Time newDelay = Seconds(lastDelay.GetSeconds() + exponential(expMean));
+          Simulator::Schedule(newDelay,&TCPFlow::StartFlow, app); // avvio la mia app in BACKGROUND
+          lastDelay = newDelay;
+        }
     }
 
     Simulator::Run ();
@@ -319,9 +342,10 @@ int main (int argc, char *argv[])
       tempoTot += (ris[1] - ris[0]);
 
       std::stringstream data;
-      data << FlowArr[i]->getFlowDim() << "," << ris[1] - ris[0];
+      data << FlowArr[i]-> getFlowDim() << "," << ris[1] - ris[0];
 
       //std::cout << data.str() << "\n";
+
 
       //free(FlowArr[i]);
 
@@ -331,6 +355,8 @@ int main (int argc, char *argv[])
 
       //std::string data(std::to_string(tempoTot/number));
     }
+
+    free(FlowArr);
 
     //delete [] exp;
 

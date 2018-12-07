@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <math.h>
 
 
 char** str_split(char* a_str, const char a_delim)
@@ -70,11 +71,11 @@ int main(int argc, char *argv[]) {
 	sim_number = atoi(argv[1]);
 	flow_number = atoi(argv[2]);
 
-	system("rm -rf OutputFiles");
-	system("mkdir OutputFiles");
+	//system("rm -rf OutputFiles");
+	//system("mkdir OutputFiles");
 
 	// build before running, without this we can have error of multiple building !!!
-	system("../../waf build");
+	//system("../../waf build");
 
 	int count = 0;
 	int flag = 1;
@@ -107,9 +108,9 @@ int main(int argc, char *argv[]) {
 
 			strcat(buff,"\" && cd -");
 
-			printf("%s\n", buff);
+			//printf("%s\n", buff);
 
-			system(buff);
+			//system(buff);
 
 			exit(EXIT_SUCCESS);
 			//execl("../../waf", "waf", "--run", "tcpflow", NULL);
@@ -126,17 +127,22 @@ int main(int argc, char *argv[]) {
 
 	// now all childs have finished
 
+	double media = 0;
+	double varianza = 0;
+	int countTotal = 0;
+
 	printf("Looking for stats files...\n");
 
-	double resPack[flow_number];
-	double resTime[flow_number];
-
-	for(int i = 0; i < flow_number; i++) {
-		resPack[i] = 0;
-		resTime[i] = 0;
-	}
+	double mediumTimes[sim_number];
 
 	for(int i = 0; i < sim_number; i++) {
+
+		double resTime[flow_number];
+
+		for(int q = 0; q < flow_number; q++) {
+			resTime[q] = 0;
+		}
+
 		char str[12];
 		char path[255];
 		sprintf(str, "ris%d.txt", i);
@@ -157,6 +163,7 @@ int main(int argc, char *argv[]) {
 			printf("Unable to open %s, ignoring it.\n", path);
 		}
 		else {
+			countTotal++;
 			/* Get the number of bytes */
 			fseek(infile, 0L, SEEK_END);
 			numbytes = ftell(infile);
@@ -171,7 +178,7 @@ int main(int argc, char *argv[]) {
 
 			/* memory error */
 			if(buffer == NULL)
-			return 1;
+				return 1;
 
 			/* copy all the text into the buffer */
 			fread(buffer, sizeof(char), numbytes, infile);
@@ -182,14 +189,25 @@ int main(int argc, char *argv[]) {
 
 			char** rows = str_split(buffer, '\n');
 
+			double tempo = 0;
+			int count = 0;
+			double med = 0;
+
 			for(int j = 0; *(rows + j); j++) {
 				double n_packets = 0;
 				double time = 0;
 
 				sscanf(rows[j], "%lf,%lf", &n_packets, &time);
 
-				resPack[j] += n_packets;
-				resTime[j] += time;
+				resTime[j] = time;
+
+				med += resTime[j];
+
+				//printf("Oiiii %.2f\n", resTime[j]);
+
+				//tempo += time;
+				
+				count++;
 
 				free(*(rows+j));
 			}
@@ -198,24 +216,53 @@ int main(int argc, char *argv[]) {
 
 			/* free the memory we used for the buffer */
 			free(buffer);
+
+			//double med = 0;
+			//for(int q = 0; q < count; q++) {
+			//	med += resTime[q];
+			//}
+
+			med = med / count;
+
+			printf("Media della simulazione n. %d è %.2f\n", i, med);
+
+			//resTime[i] = media; // mi son salvato il tempo medio!!!!
+			//resPack[i] = var;
+
+			mediumTimes[i] = med;
+
+			//printf("%.2f\t%.2f\n", med, var);
+
+			media += med;
+			//varianza += var;
 		}
 	}
 
 
 	FILE *fp;
 	fp = fopen("result.csv", "w");
-	for(int i = 0; i < flow_number; i++) {
-		resPack[i] = resPack[i] / sim_number;
-		resTime[i] = resTime[i] / sim_number;
-		fprintf(fp, "%lf,%lf\n", resPack[i], resTime[i]);
+
+	media = media / countTotal;
+	//varianza = varianza / countTotal;
+
+	for(int i = 0; i < sim_number; i++) {
+		//printf("UE: %.2f\t%.2f\n", mediumTimes[i], media);
+		varianza += pow(mediumTimes[i] - media, 2);
 	}
+
+	varianza = varianza / flow_number;
+
+	//fprintf(fp, "%lf,%lf\n", media, varianza);
+
+	printf("Risultato finale: Media: %.2f \tVarianza: %.2f\n", media, varianza);
+
 	fclose(fp);
 
 	// Result file created, now run R script!
 
-	system("Rscript RScripts/evaluation.R");
+	//system("Rscript RScripts/evaluation.R");
 
-	system("xdg-open Rplots.pdf"); // open pdf with default pdf viewer
+	//system("xdg-open Rplots.pdf"); // open pdf with default pdf viewer
 
 	printf("\n");
 
