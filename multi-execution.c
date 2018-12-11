@@ -71,11 +71,11 @@ int main(int argc, char *argv[]) {
 	sim_number = atoi(argv[1]);
 	flow_number = atoi(argv[2]);
 
-	//system("rm -rf OutputFiles");
-	//system("mkdir OutputFiles");
+	system("rm -rf OutputFiles");
+	system("mkdir OutputFiles");
 
 	// build before running, without this we can have error of multiple building !!!
-	//system("../../waf build");
+	system("../../waf build");
 
 	int count = 0;
 	int flag = 1;
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
 
 			//printf("%s\n", buff);
 
-			//system(buff);
+			system(buff);
 
 			exit(EXIT_SUCCESS);
 			//execl("../../waf", "waf", "--run", "tcpflow", NULL);
@@ -250,9 +250,9 @@ int main(int argc, char *argv[]) {
 		varianza += pow(mediumTimes[i] - media, 2);
 	}
 
-	varianza = varianza / flow_number;
+	varianza = varianza / sim_number;
 
-	//fprintf(fp, "%lf,%lf\n", media, varianza);
+	fprintf(fp, "%lf,%lf\n", media, varianza);
 
 	printf("Risultato finale: Media: %.2f \tVarianza: %.2f\n", media, varianza);
 

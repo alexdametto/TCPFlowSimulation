@@ -224,10 +224,10 @@ int main (int argc, char *argv[])
     srand(seed+1);
     SeedManager::SetSeed (seed+1);
 
-    if(number > 250) {
+    /*if(number > 250) {
       number = 250;
       std::cout << "IL NUMERO MASSIMO DI TCP FLOW È 250. LIMITE IMPOSTATO A 250.";
-    }
+    }*/
 
     std::string lat = "2"; // 2 ms
     std::string datarate = "1000000000"; // 1 Gb/s
@@ -259,7 +259,7 @@ int main (int argc, char *argv[])
         NodeContainer nr = NodeContainer(routers.Get(0), hosts.Get(i));
         NetDeviceContainer n0r_connection = p2p.Install (nr);
 
-        std::string bas = "10.1." + std::to_string(i+2) + ".0";
+        std::string bas = "10." +  std::to_string((int)i/250+2) + "." + std::to_string(i%250+2) + ".0";
         const char* c = bas.c_str();
 
         Ipv4Address base = Ipv4Address(c);
@@ -289,7 +289,7 @@ int main (int argc, char *argv[])
 
     Ipv4InterfaceContainer ipInterfs = ipv4.Assign(ndc);
 
-    Ipv4GlobalRoutingHelper::RecomputeRoutingTables();
+    Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     uint16_t servPort = 50000;
 
@@ -311,7 +311,7 @@ int main (int argc, char *argv[])
         Ptr<Socket> localSocket = Socket::CreateSocket (hosts.Get (i), TcpSocketFactory::GetTypeId ());
         localSocket->Bind ();
 
-        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, (packetMean),  dimPack); // 1500 ethernet
+        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, geometric(packetMean), dimPack); // 1522 ethernet
 
         FlowArr[i] = app;
 
