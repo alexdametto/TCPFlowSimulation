@@ -229,12 +229,12 @@ int main (int argc, char *argv[])
       std::cout << "IL NUMERO MASSIMO DI TCP FLOW È 250. LIMITE IMPOSTATO A 250.";
     }*/
 
-    std::string lat = "2"; // 2 ms
+    std::string lat = "1"; // 2 ms
     std::string datarate = "1000000000"; // 1 Gb/s
 
     PointToPointHelper p2p;
     p2p.SetDeviceAttribute ("DataRate", DataRateValue ( DataRate(1000000000))); // B [bps] è la banda del canale
-    p2p.SetChannelAttribute ("Delay", TimeValue (MilliSeconds(2))); // lambda^(-1)
+    p2p.SetChannelAttribute ("Delay", TimeValue (MilliSeconds(0.01))); // lambda^(-1)
 
     Time::SetResolution (Time::NS);
 
@@ -278,11 +278,11 @@ int main (int argc, char *argv[])
     Ipv4Address base = Ipv4Address("10.1.1.0");
     ipv4.SetBase(base, mask);
 
-    std::string datarateDest = "1000000"; // 1 Gb/s
+    std::string datarateDest = "1000000000"; // 1 Gb/s
 
     PointToPointHelper speciapP2P;
-    speciapP2P.SetDeviceAttribute ("DataRate", DataRateValue ( DataRate(1000000))); // B [bps] è la banda del canale
-    speciapP2P.SetChannelAttribute ("Delay", TimeValue (MilliSeconds(2))); // lambda^(-1)
+    speciapP2P.SetDeviceAttribute ("DataRate", DataRateValue ( DataRate(100000000))); // B [bps] è la banda del canale
+    speciapP2P.SetChannelAttribute ("Delay", TimeValue (MilliSeconds(0.01))); // lambda^(-1)
 
     NodeContainer connection = NodeContainer(routers.Get(0), endHosts.Get(0));
     NetDeviceContainer ndc = speciapP2P.Install(connection);

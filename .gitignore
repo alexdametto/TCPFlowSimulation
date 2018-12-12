@@ -1,4 +1,5 @@
 OutputFiles
+LogFiles
 multi-execution
 *.RData
 *.RHistory

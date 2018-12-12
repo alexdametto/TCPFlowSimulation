@@ -71,8 +71,8 @@ int main(int argc, char *argv[]) {
 	sim_number = atoi(argv[1]);
 	flow_number = atoi(argv[2]);
 
-	system("rm -rf OutputFiles");
-	system("mkdir OutputFiles");
+	system("rm -rf OutputFiles && rm -rf LogFiles");
+	system("mkdir OutputFiles && mkdir LogFiles");
 
 	// build before running, without this we can have error of multiple building !!!
 	system("../../waf build");
@@ -88,33 +88,15 @@ int main(int argc, char *argv[]) {
 		}
 		if(pid == 0) {
 			flag = 0;
-			char str[12];
-			char buff[255];
-			sprintf(str, "%d", count);
-			
-			strcpy(buff, "cd ../.. && ./waf --run \"TCPFlowSimulation --SimNumber=");
-			strcat(buff, str);
-			strcat(buff, " --FlowNumber=");
+			char str[400];
 
-			sprintf(str, "%d", flow_number);
+			sprintf(str, "cd ../.. && ./waf --run \"TCPFlowSimulation --SimNumber=%d && --FlowNumber=%d && --Seed=%d\" > ./scratch/TCPFlowSimulation/LogFiles/output%d.txt && cd -", count, flow_number, count, count);
+		
+			printf("%s\n", str);
 
-			strcat(buff, str);
-
-			strcat(buff, " --Seed=");
-
-			sprintf(str, "%d", count);
-
-			strcat(buff, str);
-
-			strcat(buff,"\" && cd -");
-
-			//printf("%s\n", buff);
-
-			system(buff);
+			system(str);
 
 			exit(EXIT_SUCCESS);
-			//execl("../../waf", "waf", "--run", "tcpflow", NULL);
-			//printf("Simulation number %d created.", i);
 		}
 		else {
 			count++;
@@ -125,7 +107,7 @@ int main(int argc, char *argv[]) {
 
 	while ((wpid = wait(&status)) > 0);
 
-	// now all childs have finished
+	// now all simulations have finished
 
 	double media = 0;
 	double varianza = 0;
