@@ -141,7 +141,6 @@ void PacketSink::HandleRead(Ptr<Socket> socket){
 		//byteRicevuti += packet->GetSize() - packet->RemoveHeader();
     //packet->CopyData(msg, packet->GetSize());
 
-
     //uint8_t buffer[20];
 
     //Ipv4Address address = InetSocketAddress::ConvertFrom (from).GetIpv4 ();
@@ -301,7 +300,7 @@ int main (int argc, char *argv[])
     uint32_t dimPack = 1522;
     
     double packetMean = 2000;
-    double expMean = 0.95 * 1000000 / dimPack; // 100 Mb/s
+    double expMean = 3.9007; // 0.95 * 1Gb / dim_pack
 
     Time lastDelay = Seconds(0);
 

@@ -220,6 +220,19 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	/*
+		Cose da fare: 
+
+		- Intervallo di confidenza
+
+		- Carico: 0.95 - 0.6 - 0.3
+		- Tirare fuori valore medio
+
+		- Scrivere capito sulla validazione delle simulazioni
+
+
+	*/
+
 
 	FILE *fp;
 	fp = fopen("result.csv", "w");
