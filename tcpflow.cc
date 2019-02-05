@@ -76,8 +76,10 @@ class TCPFlow {
 
       //std::cout << "Inviati: " << amountSent << "\t Stato: " << currentTxBytes << "\t/\t" << totalTxBytes << "\n"; 
     }
-    if(currentTxBytes == totalTxBytes) // il socket va chiuso SOLO se ho finito, altrimenti manderà meno pacchetti!!!! 
+    if(currentTxBytes == totalTxBytes) {
+      // il socket va chiuso SOLO se ho finito, altrimenti manderà meno pacchetti!!!! 
       socket->Close ();
+    } 
 
     //std::cout << currentTxBytes << "\t/\t" << totalTxBytes << "\n"; 
   }
@@ -154,26 +156,34 @@ void PacketSink::HandleRead(Ptr<Socket> socket){
 
     const char* ip = buffer.str().c_str();
 
-    char num[4];
+    char num1[4];
+    char num2[4];
 
     uint punti = 0;
     uint j = 0;
+    uint k = 0;
+
     for(uint i = 0; i < sizeof(ip)/sizeof(char); i++){
       char c = ip[i];
 
       if(c == '.')
         punti++;
+      else if(punti == 1) {
+        num1[k] = c;
+        num1[k+1] = '\n';
+        k++;
+      }
       else if(punti == 2){
-        num[j] = c;
-        num[j+1] = '\n';
+        num2[j] = c;
+        num2[j+1] = '\n';
         j++;
       }
     }
 
-    uint nFlow = atoi(num);
+    uint nFlow = (atoi(num1)-2) * 250 + (atoi(num2)-2);
 
-    // -2 perchè inizio da due
-    FlowArr[nFlow-2]->setTime();
+    FlowArr[nFlow]->setTime();
+
   }
 } 
 
@@ -189,10 +199,10 @@ double geometric(double mean) {
   return value;
 }
 
-double exponential(double mean) {
+double exponential(double lambda) {
   //double x = (double)rand() / (double)RAND_MAX;
 
-  return -log(rand() * 1.0 / RAND_MAX) / mean;
+  return -log(rand() * 1.0 / RAND_MAX) / lambda;
 }
 
 int main (int argc, char *argv[])
@@ -233,7 +243,7 @@ int main (int argc, char *argv[])
 
     PointToPointHelper p2p;
     p2p.SetDeviceAttribute ("DataRate", DataRateValue ( DataRate(1000000000))); // B [bps] è la banda del canale
-    p2p.SetChannelAttribute ("Delay", TimeValue (MilliSeconds(0.01))); // lambda^(-1)
+    p2p.SetChannelAttribute ("Delay", TimeValue (MilliSeconds(0.005))); // lambda^(-1)
 
     Time::SetResolution (Time::NS);
 
@@ -281,7 +291,7 @@ int main (int argc, char *argv[])
 
     PointToPointHelper speciapP2P;
     speciapP2P.SetDeviceAttribute ("DataRate", DataRateValue ( DataRate(100000000))); // B [bps] è la banda del canale
-    speciapP2P.SetChannelAttribute ("Delay", TimeValue (MilliSeconds(0.01))); // lambda^(-1)
+    speciapP2P.SetChannelAttribute ("Delay", TimeValue (MilliSeconds(0.005))); // lambda^(-1)
 
     NodeContainer connection = NodeContainer(routers.Get(0), endHosts.Get(0));
     NetDeviceContainer ndc = speciapP2P.Install(connection);
@@ -300,7 +310,7 @@ int main (int argc, char *argv[])
     uint32_t dimPack = 1522;
     
     double packetMean = 2000;
-    double expMean = 3.9007; // 0.95 * 1Gb / dim_pack
+    double lambda = 3.9007; // 0.95 * 1Gb / dim_pack
 
     Time lastDelay = Seconds(0);
 
@@ -318,7 +328,7 @@ int main (int argc, char *argv[])
           Simulator::ScheduleNow(&TCPFlow::StartFlow, app); // avvio la mia app in BACKGROUND
         }
         else {
-          Time newDelay = Seconds(lastDelay.GetSeconds() + exponential(expMean));
+          Time newDelay = Seconds(lastDelay.GetSeconds() + exponential(lambda));
           Simulator::Schedule(newDelay,&TCPFlow::StartFlow, app); // avvio la mia app in BACKGROUND
           lastDelay = newDelay;
         }
