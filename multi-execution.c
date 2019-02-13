@@ -100,6 +100,11 @@ int main(int argc, char *argv[]) {
 		}
 		else {
 			count++;
+			
+			if(count % 4 == 0) {
+				while ((wpid = wait(&status)) > 0);
+			}
+
 			if(count == sim_number)
 				flag = 0;
 		}
@@ -220,28 +225,12 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	/*
-		Cose da fare: 
-
-		- Intervallo di confidenza
-
-		- Carico: 0.95 - 0.6 - 0.3
-		- Tirare fuori valore medio
-
-		- Scrivere capito sulla validazione delle simulazioni
-
-
-	*/
-
-
 	FILE *fp;
 	fp = fopen("result.csv", "w");
 
 	media = media / countTotal;
-	//varianza = varianza / countTotal;
 
 	for(int i = 0; i < sim_number; i++) {
-		//printf("UE: %.2f\t%.2f\n", mediumTimes[i], media);
 		varianza += pow(mediumTimes[i] - media, 2);
 	}
 
@@ -252,12 +241,6 @@ int main(int argc, char *argv[]) {
 	printf("Risultato finale: Media: %.2f \tVarianza: %.2f\n", media, varianza);
 
 	fclose(fp);
-
-	// Result file created, now run R script!
-
-	//system("Rscript RScripts/evaluation.R");
-
-	//system("xdg-open Rplots.pdf"); // open pdf with default pdf viewer
 
 	printf("\n");
 

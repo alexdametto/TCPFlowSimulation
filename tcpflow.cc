@@ -20,16 +20,21 @@
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
+#include "ns3/csma-net-device.h"
+#include "ns3/queue-disc.h"
+#include "ns3/traffic-control-helper.h"
+#include "ns3/queue-disc-container.h"
+#include "ns3/twolps.h"
 #include <string>
 #include <sstream>
-
-
 #include <iostream>
 #include <fstream>
 
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("SimTesi");
+
+int threshold = 150;
 
 class TCPFlow {
   private:
@@ -42,30 +47,29 @@ class TCPFlow {
   uint32_t numPackets;
   double startingTime;
   double endingTime;
+  int flowNumber;
 
 
   private:
   void WriteUntilBufferFull(Ptr<Socket> socket, uint32_t txSpace) {
-    //std::cout << currentTxBytes << "\t" << totalTxBytes << "\n";
     while (currentTxBytes < totalTxBytes && socket->GetTxAvailable () >= this->writeSize) 
     {
-      /*uint32_t toWrite = totalTxBytes - currentTxBytes;
-      if(toWrite >= writeSize)
-        toWrite = writeSize;*/
+      //std::string name = std::to_string(flowNumber);
 
-      /*uint32_t left = totalTxBytes - currentTxBytes;
-      uint32_t dataOffset = currentTxBytes % writeSize;
-      uint32_t toWrite = writeSize - dataOffset;
+      //std::ostringstream msg; 
+      //msg << flowNumber << ";\0";
 
+      //std::string st = msg.str();
 
-      toWrite = std::min (toWrite, left);
-      toWrite = std::min (toWrite, socket->GetTxAvailable ());
+      std::ostringstream msg; 
+      msg << "Something\0";
 
-      if(toWrite < this->writeSize) {
-        return;
-      }*/
-      Ptr<Packet> packet = Create<Packet>(this->writeSize);
+      std::string st = msg.str();
+
+      Ptr<Packet> packet = Create<Packet> ((uint8_t*) st.c_str(), st.length());  
+
       int amountSent = socket->Send (packet);
+
       if(amountSent < 0)
       {
         std::cout << "uhm....\n";
@@ -85,7 +89,7 @@ class TCPFlow {
   }
 
   public:
-  TCPFlow(Ptr<Socket> socket, Ipv4Address servAddress, uint16_t servPort, uint32_t numPackets, uint32_t bytesForPacket) {
+  TCPFlow(Ptr<Socket> socket, Ipv4Address servAddress, uint16_t servPort, uint32_t numPackets, uint32_t bytesForPacket, int flowNumber) {
     this->socket = socket;
     this->servAddress = servAddress;
     this->servPort = servPort;
@@ -93,6 +97,7 @@ class TCPFlow {
     this->writeSize = bytesForPacket;
     this->currentTxBytes = 0;
     this->numPackets = numPackets;
+    this->flowNumber = flowNumber;
 
     this->startingTime = 0;
     this->endingTime = 0;
@@ -107,7 +112,6 @@ class TCPFlow {
     
     this->startingTime = this->endingTime = Simulator::Now().GetSeconds();
     
-    
     socket->Connect (InetSocketAddress (servAddress, servPort)); //connect
 
     // tell the tcp implementation to call WriteUntilBufferFull again
@@ -118,6 +122,10 @@ class TCPFlow {
 
   void setTime() {
     this->endingTime = Simulator::Now().GetSeconds();
+  }
+
+  int getSentPacketNumber() {
+    return (int)(this->currentTxBytes / this->writeSize);
   }
 
   void getTimes(double ris[2]){
@@ -131,6 +139,40 @@ class TCPFlow {
 };
 
 TCPFlow** FlowArr;
+
+int getFlowNumber(	Address from) {
+  std::stringstream buffer;
+  InetSocketAddress::ConvertFrom(from).GetIpv4().Print(buffer);
+
+  const char* ip = buffer.str().c_str();
+
+  char num1[4];
+  char num2[4];
+
+  uint punti = 0;
+  uint j = 0;
+  uint k = 0;
+
+  for(uint i = 0; i < sizeof(ip)/sizeof(char); i++){
+    char c = ip[i];
+
+    if(c == '.')
+      punti++;
+    else if(punti == 1) {
+      num1[k] = c;
+      num1[k+1] = '\n';
+      k++;
+    }
+    else if(punti == 2){
+      num2[j] = c;
+      num2[j+1] = '\n';
+      j++;
+    }
+  }
+
+  return (atoi(num1)-2) * 250 + (atoi(num2)-2);
+}
+
 
 // Metodo di callback quando arriva un pacchetto
 void PacketSink::HandleRead(Ptr<Socket> socket){
@@ -162,7 +204,7 @@ void PacketSink::HandleRead(Ptr<Socket> socket){
     uint punti = 0;
     uint j = 0;
     uint k = 0;
-
+  
     for(uint i = 0; i < sizeof(ip)/sizeof(char); i++){
       char c = ip[i];
 
@@ -181,22 +223,36 @@ void PacketSink::HandleRead(Ptr<Socket> socket){
     }
 
     uint nFlow = (atoi(num1)-2) * 250 + (atoi(num2)-2);
-
     FlowArr[nFlow]->setTime();
-
   }
 } 
 
 
 
 double geometric(double mean) {
-
   //double x = (double)rand() / (double)RAND_MAX;
 
-  double p = 1/mean;
-  double value = (log(1 - rand() * 1.0 / RAND_MAX) / log(1 - p));
+  double value;
 
+  double p = 1/mean;
+
+  value = (log(1 - rand() * 1.0 / RAND_MAX) / log(1 - p));
+  
   return value;
+}
+
+double geom() {
+  double value = rand() * 1.0 / RAND_MAX;
+  double mean = 0;
+  if(value <= 0.03) 
+    mean = 40000;
+  else if(value <= 0.10)
+    mean = 10000;
+  else mean = 100;
+
+  double val = geometric(mean);
+
+  return val;
 }
 
 double exponential(double lambda) {
@@ -208,6 +264,8 @@ double exponential(double lambda) {
 int main (int argc, char *argv[])
 {
     LogComponentEnable("SimTesi", LOG_LEVEL_INFO);
+
+    //Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1522));
 
     int number = 200;
 
@@ -280,10 +338,6 @@ int main (int argc, char *argv[])
         ipv4.Assign(ndc);
     }
 
-    NodeContainer e1r = NodeContainer(routers.Get(0), endHosts.Get(0));
-    NetDeviceContainer e1r_connetction;
-    e1r_connetction = p2p.Install(e1r);
-
     Ipv4Address base = Ipv4Address("10.1.1.0");
     ipv4.SetBase(base, mask);
 
@@ -295,6 +349,10 @@ int main (int argc, char *argv[])
 
     NodeContainer connection = NodeContainer(routers.Get(0), endHosts.Get(0));
     NetDeviceContainer ndc = speciapP2P.Install(connection);
+
+    TrafficControlHelper tch;
+    tch.SetRootQueueDisc("ns3::TwoLPS");
+    QueueDiscContainer qdiscs = tch.Install(ndc.Get(0));
 
     Ipv4InterfaceContainer ipInterfs = ipv4.Assign(ndc);
 
@@ -309,8 +367,7 @@ int main (int argc, char *argv[])
 
     uint32_t dimPack = 1522;
     
-    double packetMean = 2000;
-    double lambda = 3.9007; // 0.95 * 1Gb / dim_pack
+    double lambda = 2.4636; // 0.95 * 1Gb / dim_pack
 
     Time lastDelay = Seconds(0);
 
@@ -320,7 +377,7 @@ int main (int argc, char *argv[])
         Ptr<Socket> localSocket = Socket::CreateSocket (hosts.Get (i), TcpSocketFactory::GetTypeId ());
         localSocket->Bind ();
 
-        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, geometric(packetMean), dimPack); // 1522 ethernet
+        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, geom(), dimPack, i); // 1522 ethernet
 
         FlowArr[i] = app;
 
