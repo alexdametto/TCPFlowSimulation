@@ -350,9 +350,9 @@ int main (int argc, char *argv[])
     NodeContainer connection = NodeContainer(routers.Get(0), endHosts.Get(0));
     NetDeviceContainer ndc = speciapP2P.Install(connection);
 
-    TrafficControlHelper tch;
+    /*TrafficControlHelper tch;
     tch.SetRootQueueDisc("ns3::TwoLPS");
-    QueueDiscContainer qdiscs = tch.Install(ndc.Get(0));
+    QueueDiscContainer qdiscs = tch.Install(ndc.Get(0));*/
 
     Ipv4InterfaceContainer ipInterfs = ipv4.Assign(ndc);
 
@@ -368,6 +368,8 @@ int main (int argc, char *argv[])
     uint32_t dimPack = 1522;
     
     double lambda = 2.4636; // 0.95 * 1Gb / dim_pack
+
+    // dataset dimnsione flussi TCP
 
     Time lastDelay = Seconds(0);
 
