@@ -261,6 +261,34 @@ double exponential(double lambda) {
   return -log(rand() * 1.0 / RAND_MAX) / lambda;
 }
 
+int getRandomFromFile() {
+  // get random
+  int num = 0;
+  int count = 0;
+  int index = int(floor(rand() / (RAND_MAX + 1.0) * (13624)));
+
+  std::ifstream infile("./scratch/TCPFlowSimulation/dataset.txt");
+
+  std::string line;
+
+  while (std::getline(infile, line))
+  {
+      std::istringstream iss(line);
+      int a;
+      if (!(iss >> a)) { break; } // error
+
+      if(count == index) {
+        num = a;
+      }
+
+      count++;
+  }
+
+  infile.close();
+
+  return num;
+} 
+
 int main (int argc, char *argv[])
 {
     LogComponentEnable("SimTesi", LOG_LEVEL_INFO);
@@ -350,9 +378,9 @@ int main (int argc, char *argv[])
     NodeContainer connection = NodeContainer(routers.Get(0), endHosts.Get(0));
     NetDeviceContainer ndc = speciapP2P.Install(connection);
 
-    /*TrafficControlHelper tch;
+    TrafficControlHelper tch;
     tch.SetRootQueueDisc("ns3::TwoLPS");
-    QueueDiscContainer qdiscs = tch.Install(ndc.Get(0));*/
+    QueueDiscContainer qdiscs = tch.Install(ndc.Get(0));
 
     Ipv4InterfaceContainer ipInterfs = ipv4.Assign(ndc);
 
@@ -367,7 +395,7 @@ int main (int argc, char *argv[])
 
     uint32_t dimPack = 1522;
     
-    double lambda = 2.4636; // 0.95 * 1Gb / dim_pack
+    double lambda = 0.11191; // 0.95 * 1Gb / dim_pack
 
     // dataset dimnsione flussi TCP
 
@@ -375,11 +403,11 @@ int main (int argc, char *argv[])
 
     // pacchetti in modo geometrico media = 2000 pacchetti
 
-    for(int i = 0; i < number; i++){
+    for(int i = 0; i < number; i++){   
         Ptr<Socket> localSocket = Socket::CreateSocket (hosts.Get (i), TcpSocketFactory::GetTypeId ());
         localSocket->Bind ();
 
-        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, geom(), dimPack, i); // 1522 ethernet
+        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, getRandomFromFile(), dimPack, i); // 1522 ethernet
 
         FlowArr[i] = app;
 
