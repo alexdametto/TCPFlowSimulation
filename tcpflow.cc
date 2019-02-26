@@ -301,10 +301,13 @@ int main (int argc, char *argv[])
 
     int seed = 100;
 
+    int twoLPS = 0;
+
     CommandLine cmd;
     cmd.AddValue("SimNumber", "Number of the simulation.", simNumber);
     cmd.AddValue("FlowNumber", "Number of TCP Flow.", number);
     cmd.AddValue("Seed", "Seed of the simulation.", seed);
+    cmd.AddValue("TwoLPS", "TwoLPS or PS", twoLPS);
     /*cmd.AddValue("DataRate", "P2P data rate in bps", datarate);
     cmd.AddValue("n_tcp", "Number of TCP Flow", number);
     cmd.AddValue("seed", "Number of seed", seed);*/
@@ -378,9 +381,11 @@ int main (int argc, char *argv[])
     NodeContainer connection = NodeContainer(routers.Get(0), endHosts.Get(0));
     NetDeviceContainer ndc = speciapP2P.Install(connection);
 
-    TrafficControlHelper tch;
-    tch.SetRootQueueDisc("ns3::TwoLPS");
-    QueueDiscContainer qdiscs = tch.Install(ndc.Get(0));
+    if(twoLPS == 1) {
+      TrafficControlHelper tch;
+      tch.SetRootQueueDisc("ns3::TwoLPS");
+      QueueDiscContainer qdiscs = tch.Install(ndc.Get(0));
+    }
 
     Ipv4InterfaceContainer ipInterfs = ipv4.Assign(ndc);
 
@@ -424,7 +429,12 @@ int main (int argc, char *argv[])
     Simulator::Run ();
     Simulator::Destroy ();
 
-    std::string path = "scratch/TCPFlowSimulation/OutputFiles/ris" + std::to_string(simNumber) + ".txt";
+    std::string path = "scratch/TCPFlowSimulation/OutputFilesPS/ris" + std::to_string(simNumber) + ".txt";
+
+    if(twoLPS == 1) {
+      path = "scratch/TCPFlowSimulation/OutputFiles2LPS/ris" + std::to_string(simNumber) + ".txt";
+    }
+
     std::fstream txtFile;
     txtFile.open(path, std::fstream::out);
 

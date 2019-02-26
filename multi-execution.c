@@ -71,14 +71,19 @@ int main(int argc, char *argv[]) {
 	sim_number = atoi(argv[1]);
 	flow_number = atoi(argv[2]);
 
-	system("rm -rf OutputFiles && rm -rf LogFiles");
-	system("mkdir OutputFiles && mkdir LogFiles");
+	system("rm -rf OutputFiles2LPS && rm -rf LogFiles2LPS");
+	system("mkdir OutputFiles2LPS && mkdir LogFiles2LPS");
+
+	system("rm -rf OutputFilesPS && rm -rf LogFilesPS");
+	system("mkdir OutputFilesPS && mkdir LogFilesPS");
 
 	// build before running, without this we can have error of multiple building !!!
 	system("../../waf build");
 
 	int count = 0;
 	int flag = 1;
+
+	int twoLPS = 0;
 	while(flag) {
 		pid_t pid = fork();
 
@@ -90,8 +95,10 @@ int main(int argc, char *argv[]) {
 			flag = 0;
 			char str[400];
 
-			sprintf(str, "cd ../.. && ./waf --run \"TCPFlowSimulation --SimNumber=%d && --FlowNumber=%d && --Seed=%d\" > ./scratch/TCPFlowSimulation/LogFiles/output%d.txt && cd -", count, flow_number, count, count);
-		
+			if(twoLPS == 0)	
+				sprintf(str, "cd ../.. && ./waf --run \"TCPFlowSimulation --SimNumber=%d && --FlowNumber=%d && --Seed=%d && --TwoLPS=%d \" > ./scratch/TCPFlowSimulation/LogFilesPS/output%d.txt && cd -", count, flow_number, count, twoLPS, count);
+			else sprintf(str, "cd ../.. && ./waf --run \"TCPFlowSimulation --SimNumber=%d && --FlowNumber=%d && --Seed=%d && --TwoLPS=%d \" > ./scratch/TCPFlowSimulation/LogFiles2LPS/output%d.txt && cd -", count, flow_number, count, twoLPS, count);
+
 			printf("%s\n", str);
 
 			system(str);
@@ -101,12 +108,19 @@ int main(int argc, char *argv[]) {
 		else {
 			count++;
 			
-			if(count % 4 == 0) {
+			/*if(count % 4 == 0) {
 				while ((wpid = wait(&status)) > 0);
-			}
+			}*/
 
-			if(count == sim_number)
-				flag = 0;
+			if(count == sim_number) {
+				if(twoLPS == 1) {
+					flag = 0;
+				}
+				else {
+					count = 0;
+					twoLPS = 1;
+				}
+			}
 		}
 	}
 
@@ -114,7 +128,7 @@ int main(int argc, char *argv[]) {
 
 	// now all simulations have finished
 
-	double media = 0;
+	/*double media = 0;
 	double varianza = 0;
 	int countTotal = 0;
 
@@ -137,42 +151,29 @@ int main(int argc, char *argv[]) {
 		strcpy(path, "./OutputFiles/");
 		strcat(path, str);
 	
-		/* declare a file pointer */
 		FILE    *infile;
 		char    *buffer;
 		long    numbytes;
 
-		/* open an existing file for reading */
 		infile = fopen(path, "r");
 
-		/* quit if the file does not exist */
 		if(infile == NULL) {
 			printf("Unable to open %s, ignoring it.\n", path);
 		}
 		else {
 			countTotal++;
-			/* Get the number of bytes */
 			fseek(infile, 0L, SEEK_END);
 			numbytes = ftell(infile);
 
-			/* reset the file position indicator to 
-			the beginning of the file */
-			fseek(infile, 0L, SEEK_SET);	
+			fseek(infile, 0L, SEEK_SET);
 
-			/* grab sufficient memory for the 
-			buffer to hold the text */
 			buffer = (char*)calloc(numbytes, sizeof(char));	
 
-			/* memory error */
 			if(buffer == NULL)
 				return 1;
 
-			/* copy all the text into the buffer */
 			fread(buffer, sizeof(char), numbytes, infile);
 			fclose(infile);
-
-			/* confirm we have read the file by
-			outputing it to the console */
 
 			char** rows = str_split(buffer, '\n');
 
@@ -201,7 +202,6 @@ int main(int argc, char *argv[]) {
 
 			free(rows);
 
-			/* free the memory we used for the buffer */
 			free(buffer);
 
 			//double med = 0;
@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
 
 	fclose(fp);
 
-	printf("\n");
+	printf("\n"); */
 
 	exit(EXIT_SUCCESS);
 }

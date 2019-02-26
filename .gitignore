@@ -1,5 +1,7 @@
-OutputFiles
-LogFiles
+OutputFilesPS
+OutputFiles2LPS
+LogFilesPS
+LogFiles2LPS
 multi-execution
 *.RData
 *.RHistory
