@@ -400,7 +400,7 @@ int main (int argc, char *argv[])
 
     uint32_t dimPack = 1522;
     
-    double lambda = 0.11191; // 0.95 * 1Gb / dim_pack
+    double lambda = 3.92; // 0.95 * 1Gb / dim_pack
 
     // dataset dimnsione flussi TCP
 
@@ -412,7 +412,7 @@ int main (int argc, char *argv[])
         Ptr<Socket> localSocket = Socket::CreateSocket (hosts.Get (i), TcpSocketFactory::GetTypeId ());
         localSocket->Bind ();
 
-        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, getRandomFromFile(), dimPack, i); // 1522 ethernet
+        TCPFlow* app = new TCPFlow (localSocket, ipInterfs.GetAddress (1), servPort, geom(), dimPack, i); // 1522 ethernet
 
         FlowArr[i] = app;
 

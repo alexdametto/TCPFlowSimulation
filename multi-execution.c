@@ -108,15 +108,17 @@ int main(int argc, char *argv[]) {
 		else {
 			count++;
 			
-			/*if(count % 4 == 0) {
+			if(count % 4 == 0) {
 				while ((wpid = wait(&status)) > 0);
-			}*/
+			}
 
 			if(count == sim_number) {
 				if(twoLPS == 1) {
 					flag = 0;
 				}
 				else {
+					while ((wpid = wait(&status)) > 0);
+
 					count = 0;
 					twoLPS = 1;
 				}
